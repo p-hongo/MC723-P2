@@ -85,6 +85,8 @@ void mips1::behavior() {
 
       ++cycles;
 
+      detect_data_hazard();
+
       ISA.cur_instr_id = ins_id;
       if (!ac_annul_sig) ISA._behavior_instruction(instr_vec->get(1));
       switch (ins_id) {
@@ -333,6 +335,7 @@ void mips1::behavior() {
     }
     if ((!ac_wait_sig) && (!ac_annul_sig)) ac_instr_counter+=1;
     ac_annul_sig = 0;
+    previous_instruction = instr_vec;
   }
 //!Updating Regs for behavioral simulation.
   if(!ac_wait_sig){
@@ -353,6 +356,36 @@ void mips1::behavior() {
 
 } // for (;;)
 } // behavior()
+
+void mips1::detect_data_hazard() {
+    if (!previous_instruction) return;
+    int prev_in = previous_instruction->get(IDENT);
+    int curr_in = instr_vec->get(IDENT);
+
+    if (prev_in >= 1 && prev_in <= 7) {
+        // previous instruction was a load
+        // TODO store?
+        int prev_rt = previous_instruction->get(3);
+
+        int curr_rs = 0, curr_rt = 0;
+        if (curr_in >= 13 && curr_in <= 20) {
+            // type I instructions
+            curr_rs = instr_vec->get(2);
+        } else if (curr_in >= 21 && curr_in <= 45) {
+            // type R instructions
+            curr_rs = instr_vec->get(2);
+            curr_rt = instr_vec->get(3);
+        } else {
+            // TODO type J, and a few other type R like jr
+            return;
+        }
+
+        if (prev_rt == curr_rs || prev_rt == curr_rt) {
+            // data hazard, need one stall cycle
+            cycles++;
+        }
+    }
+}
 
  
 #include <ac_sighandlers.H>

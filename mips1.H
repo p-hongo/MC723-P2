@@ -45,10 +45,12 @@ public:
   bool start_up;
   unsigned* instr_dec;
   ac_instr_t* instr_vec;
+  ac_instr_t* previous_instruction;
 
   //!Behavior execution method.
   void behavior();
 
+  void detect_data_hazard();
  
   SC_HAS_PROCESS( mips1 );
 
@@ -60,7 +62,7 @@ public:
     has_delayed_load = false; 
     start_up=1;
     id = 1;
-
+    previous_instruction = NULL;
   }
   void init_dec_cache() {
     DEC_CACHE = (cache_item_t*) calloc(sizeof(cache_item_t),dec_cache_size);
