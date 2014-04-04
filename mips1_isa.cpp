@@ -52,6 +52,19 @@
 // mips1-specific datatypes
 using namespace mips1_parms;
 
+
+// branch predictor
+using namespace std;
+int bit = 0;
+
+void branch_taken() {
+  if (bit < 3) bit++;
+}
+
+void branch_ntaken() {
+  if (bit > 0) bit--;
+}
+
 //!Generic instruction behavior method.
 void ac_behavior( instruction )
 { 
@@ -622,11 +635,14 @@ void ac_behavior( beq )
 {
   dbg_printf("beq r%d, r%d, %d\n", rt, rs, imm & 0xFFFF);
   if( RB[rs] == RB[rt] ){
+    branch_taken();
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif 
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
-  }	
+  }	else {
+    branch_ntaken();
+  }
 };
 
 //!Instruction bne behavior method.
@@ -634,10 +650,13 @@ void ac_behavior( bne )
 {	
   dbg_printf("bne r%d, r%d, %d\n", rt, rs, imm & 0xFFFF);
   if( RB[rs] != RB[rt] ){
+    branch_taken();
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif 
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
+  }	else {
+    branch_ntaken();
   }	
 };
 
@@ -646,10 +665,13 @@ void ac_behavior( blez )
 {
   dbg_printf("blez r%d, %d\n", rs, imm & 0xFFFF);
   if( (RB[rs] == 0 ) || (RB[rs]&0x80000000 ) ){
+    branch_taken();
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2), 1;
 #endif 
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
+  }	else {
+    branch_ntaken();
   }	
 };
 
@@ -658,10 +680,13 @@ void ac_behavior( bgtz )
 {
   dbg_printf("bgtz r%d, %d\n", rs, imm & 0xFFFF);
   if( !(RB[rs] & 0x80000000) && (RB[rs]!=0) ){
+    branch_taken();
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif 
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
+  }	else {
+    branch_ntaken();
   }	
 };
 
@@ -670,10 +695,13 @@ void ac_behavior( bltz )
 {
   dbg_printf("bltz r%d, %d\n", rs, imm & 0xFFFF);
   if( RB[rs] & 0x80000000 ){
+    branch_taken();
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif 
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
+  }	else {
+    branch_ntaken();
   }	
 };
 
@@ -682,10 +710,13 @@ void ac_behavior( bgez )
 {
   dbg_printf("bgez r%d, %d\n", rs, imm & 0xFFFF);
   if( !(RB[rs] & 0x80000000) ){
+    branch_taken();
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif 
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
+  }	else {
+    branch_ntaken();
   }	
 };
 
@@ -695,10 +726,13 @@ void ac_behavior( bltzal )
   dbg_printf("bltzal r%d, %d\n", rs, imm & 0xFFFF);
   RB[Ra] = ac_pc+4; //ac_pc is pc+4, we need pc+8
   if( RB[rs] & 0x80000000 ){
+    branch_taken();
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif 
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
+  }	else {
+    branch_ntaken();
   }	
   dbg_printf("Return = %#x\n", ac_pc+4);
 };
@@ -709,10 +743,13 @@ void ac_behavior( bgezal )
   dbg_printf("bgezal r%d, %d\n", rs, imm & 0xFFFF);
   RB[Ra] = ac_pc+4; //ac_pc is pc+4, we need pc+8
   if( !(RB[rs] & 0x80000000) ){
+    branch_taken();
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif 
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
+  }	else {
+    branch_ntaken();
   }	
   dbg_printf("Return = %#x\n", ac_pc+4);
 };
