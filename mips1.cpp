@@ -362,27 +362,38 @@ void mips1::detect_data_hazard() {
     int prev_in = previous_instruction->get(IDENT);
     int curr_in = instr_vec->get(IDENT);
 
+    // We assume forwarding for all pipeline stages.
+    // On a five stage pipeline, the only remaining case in which we
+    // absolutely need to stall is a dependency between instructions
+    // in the MEM and EX stages:
+    //     lb $1, 0($2)
+    //     add $4, $1, $5
+    // This can only happen for loads on a five-stage pipeline, and in
+    // that case, we need to stall for one cycle.
     if (prev_in >= 1 && prev_in <= 7) {
         // previous instruction was a load
-        // TODO store?
         int prev_rt = previous_instruction->get(3);
 
         int curr_rs = 0, curr_rt = 0;
         if (curr_in >= 13 && curr_in <= 20) {
-            // type I instructions
+            // type I instructions read from Rs
             curr_rs = instr_vec->get(2);
         } else if (curr_in >= 21 && curr_in <= 45) {
-            // type R instructions
+            // type R instructions read Rs and Rt
             curr_rs = instr_vec->get(2);
             curr_rt = instr_vec->get(3);
-        } else {
-            // TODO type J, and a few other type R like jr
-            return;
+        } else if (curr_in == 48 || curr_in == 49) {
+            // jr and jalr read from Rs
+            curr_rs = instr_vec->get(2);
+        } else if (curr_in >= 50 && curr_in <= 57) {
+            // branch instructions need Rs and Rt
+            curr_rs = instr_vec->get(2);
+            curr_rt = instr_vec->get(3);
         }
 
-        if (prev_rt == curr_rs || prev_rt == curr_rt) {
-            // data hazard, need one stall cycle
-            cycles++;
+        if (prev_rt && (prev_rt == curr_rs || prev_rt == curr_rt)) {
+            // data hazard!
+            if (pipeline_size == 5) cycles++;
         }
     }
 }
