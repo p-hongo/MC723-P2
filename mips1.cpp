@@ -335,7 +335,8 @@ void mips1::behavior() {
     }
     if ((!ac_wait_sig) && (!ac_annul_sig)) ac_instr_counter+=1;
     ac_annul_sig = 0;
-    previous_instruction = instr_vec;
+    previous_instruction[0] = previous_instruction[1];
+    previous_instruction[1] = instr_vec;
   }
 //!Updating Regs for behavioral simulation.
   if(!ac_wait_sig){
@@ -357,12 +358,41 @@ void mips1::behavior() {
 } // for (;;)
 } // behavior()
 
-void mips1::detect_data_hazard() {
-    if (!previous_instruction) return;
-    int prev_in = previous_instruction->get(IDENT);
-    int curr_in = instr_vec->get(IDENT);
+bool mips1::has_load_read_dependency(ac_instr_t *load, ac_instr_t *instruction) {
+    if (!(load->get(IDENT) >= 1 && load->get(IDENT) <= 7)) {
+        return false; // not a load
+    }
 
-    // We assume forwarding for all pipeline stages.
+    int op = instruction->get(IDENT);
+    int load_rt = load->get(3);
+
+    int rs = 0, rt = 0;
+    if (op >= 13 && op <= 20) {
+        // type I instructions read from Rs
+        rs = instruction->get(2);
+    } else if (op >= 21 && op <= 45) {
+        // type R instructions read Rs and Rt
+        rs = instruction->get(2);
+        rt = instruction->get(3);
+    } else if (op == 48 || op == 49) {
+        // jr and jalr read from Rs
+        rs = instruction->get(2);
+    } else if (op >= 50 && op <= 57) {
+        // branch instructions need Rs and Rt
+        rs = instruction->get(2);
+        rt = instruction->get(3);
+    }
+
+    if (load_rt && (load_rt == rs || load_rt == rt)) {
+        return true;
+    }
+
+    return false;
+}
+
+void mips1::detect_data_hazard() {
+    // We assume forwarding for all pipeline stages, and that
+    // branches are resolved in the EX step.
     // On a five stage pipeline, the only remaining case in which we
     // absolutely need to stall is a dependency between instructions
     // in the MEM and EX stages:
@@ -370,31 +400,41 @@ void mips1::detect_data_hazard() {
     //     add $4, $1, $5
     // This can only happen for loads on a five-stage pipeline, and in
     // that case, we need to stall for one cycle.
-    if (prev_in >= 1 && prev_in <= 7) {
-        // previous instruction was a load
-        int prev_rt = previous_instruction->get(3);
+    // On our seven-stage pipeline:
+    //     IF IS RF EX DF DS WB
+    // we assume forwarding from DS to EX, and there are two cases that can
+    // cause a hazard: the one above (2-cycle stall) and:
+    //     lb $1, 0($2)
+    //     ...any instruction...
+    //     add $4, $1, $5
+    // in which case we only need a 1-cycle stall.
 
-        int curr_rs = 0, curr_rt = 0;
-        if (curr_in >= 13 && curr_in <= 20) {
-            // type I instructions read from Rs
-            curr_rs = instr_vec->get(2);
-        } else if (curr_in >= 21 && curr_in <= 45) {
-            // type R instructions read Rs and Rt
-            curr_rs = instr_vec->get(2);
-            curr_rt = instr_vec->get(3);
-        } else if (curr_in == 48 || curr_in == 49) {
-            // jr and jalr read from Rs
-            curr_rs = instr_vec->get(2);
-        } else if (curr_in >= 50 && curr_in <= 57) {
-            // branch instructions need Rs and Rt
-            curr_rs = instr_vec->get(2);
-            curr_rt = instr_vec->get(3);
-        }
+    // FIXME if instr_vec depends on previous_instruction[1] but also
+    // has a load-read dependency on previous_instruction[0], and if
+    // previous_instruction[1] also has a load_read dependency on
+    // previous_instruction[0], then we already stalled when
+    // previous_instruction[1] entered the pipeline, and don't need to stall
+    // again for instr_vec:
+    //     lb $1, 0($2)
+    //     add $4, $1, $3 <-- stall here because of $1
+    //     add $5, $4, $1 <-- no need to stall here!
 
-        if (prev_rt && (prev_rt == curr_rs || prev_rt == curr_rt)) {
-            // data hazard!
-            if (pipeline_size == 5) cycles++;
-        }
+    // load $2, 0($3)
+    // add $4, $2, 7
+    if (previous_instruction[1] &&
+        has_load_read_dependency(previous_instruction[1], instr_vec)) {
+
+        if (pipeline_size == 5) cycles += 1;
+        else if (pipeline_size == 7) cycles += 2;
+    }
+
+    // load $2, 0($3)
+    // sub $4, %5, $6
+    // add $4, $2, 7
+    if (previous_instruction[0] &&
+        has_load_read_dependency(previous_instruction[0], instr_vec)) {
+
+        if (pipeline_size == 7) cycles += 1;
     }
 }
 
