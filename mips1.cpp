@@ -418,6 +418,29 @@ d4cache* mips1::set_mem_cache() {
     return L1;
 }
 
+d4cache* mips1::set_ins_cache() {
+    d4cache* Mem;
+    d4cache* L1;
+    char *name = new char[20];
+    strcmp(name, "L1");
+
+    Mem = d4new(NULL);
+    L1 = d4new(Mem);
+    L1->name = name;
+    L1->flags = D4F_CCC | D4F_RO;
+    L1->lg2blocksize = 8;
+    L1->lg2subblocksize = 6;
+    L1->lg2size = 20;
+    L1->assoc = 2;
+    L1->replacementf = d4rep_lru;
+    L1->prefetchf = d4prefetch_none;
+    L1->wallocf = d4walloc_always;
+    L1->wbackf = d4wback_always;
+    L1->name_replacement = L1->name_prefetch = L1->name_walloc = L1->name_wback = name;
+    
+    return L1;
+}
+
 void mips1::get_mem_cache_misses(int ac_annul_sig, int ins_id, mips1::ac_instr_t* instr_vec, d4cache *cache){
     d4memref R;
     if(!ac_annul_sig && ins_id == 1 || ins_id == 2){

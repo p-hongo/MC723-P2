@@ -26,8 +26,8 @@ TARGET_ARCH :=  linux64
 
 
 
-INC_DIR := -I. -I/home/staff/rodolfo/mc723/archc/include/archc -I$(SYSTEMC)/include -I/var/tmp/d4-7
-LIB_DIR := -L. -L$(SYSTEMC)/lib-$(TARGET_ARCH) -L/home/staff/rodolfo/mc723/archc/lib -L/var/tmp/d4-7 -ld4
+INC_DIR := -I. -I/home/staff/rodolfo/mc723/archc/include/archc -I$(SYSTEMC)/include -Id4-7
+LIB_DIR := -L. -L$(SYSTEMC)/lib-$(TARGET_ARCH) -L/home/staff/rodolfo/mc723/archc/lib -Ld4-7 -ld4
 
 LIB_SYSTEMC := -lsystemc
 LIBS := $(LIB_SYSTEMC) -lm $(EXTRA_LIBS) -larchc -ld4

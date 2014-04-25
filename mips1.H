@@ -60,6 +60,7 @@ public:
   void detect_data_hazard();
 
   d4cache* set_mem_cache();
+  d4cache* set_ins_cache();
 
     void print_cache_status(d4cache *cache);
 
