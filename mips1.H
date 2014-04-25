@@ -63,7 +63,7 @@ public:
 
     void print_cache_status(d4cache *cache);
 
-    void get_cache_misses(int ac_annul_sig, int ins_id, mips1::ac_instr_t* instr_vec, d4cache *cache);
+    void get_mem_cache_misses(int ac_annul_sig, int ins_id, mips1::ac_instr_t* instr_vec, d4cache *cache);
 
   SC_HAS_PROCESS( mips1 );
 

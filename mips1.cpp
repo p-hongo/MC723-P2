@@ -92,7 +92,7 @@ void mips1::behavior() {
       ISA.cur_instr_id = ins_id;
       if (!ac_annul_sig) ISA._behavior_instruction(instr_vec->get(1));   
 
-      get_cache_misses(ac_annul_sig, ins_id, instr_vec, mem_cache);
+      get_mem_cache_misses(ac_annul_sig, ins_id, instr_vec, mem_cache);
 
       switch (ins_id) {
       case 1: // Instruction lb
@@ -402,10 +402,9 @@ d4cache* mips1::set_mem_cache() {
     strcmp(name, "L1");
 
     Mem = d4new(NULL);
-    
-    Mem = d4new(NULL);
     L1 = d4new(Mem);
     L1->name = name;
+    L1->flags = D4F_CCC;
     L1->lg2blocksize = 8;
     L1->lg2subblocksize = 6;
     L1->lg2size = 20;
@@ -419,7 +418,7 @@ d4cache* mips1::set_mem_cache() {
     return L1;
 }
 
-void mips1::get_cache_misses(int ac_annul_sig, int ins_id, mips1::ac_instr_t* instr_vec, d4cache *cache){
+void mips1::get_mem_cache_misses(int ac_annul_sig, int ins_id, mips1::ac_instr_t* instr_vec, d4cache *cache){
     d4memref R;
     if(!ac_annul_sig && ins_id == 1 || ins_id == 2){
         R.address = (d4addr) (RB[instr_vec->get(2)] + instr_vec->get(7));
