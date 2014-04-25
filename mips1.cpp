@@ -452,16 +452,10 @@ void mips1::detect_data_hazard() {
     //     ...any instruction...
     //     add $4, $1, $5
     // in which case we only need a 1-cycle stall.
-
-    // FIXME if instr_vec depends on previous_instruction[1] but also
-    // has a load-read dependency on previous_instruction[0], and if
-    // previous_instruction[1] also has a load_read dependency on
-    // previous_instruction[0], then we already stalled when
-    // previous_instruction[1] entered the pipeline, and don't need to stall
-    // again for instr_vec:
-    //     lb $1, 0($2)
-    //     add $4, $1, $3 <-- stall here because of $1
-    //     add $5, $4, $1 <-- no need to stall here!
+    // The 13-stage pipeline:
+    //     F1 F2 D0 D1 D2 D3 E0 E1 E2 E3 E4 E5
+    // is similar to the 7-stage pipeline, assuming forwarding from E3 and E4 to
+    // E1 and E2.
 
     // load $2, 0($3)
     // add $4, $2, 7
@@ -469,7 +463,7 @@ void mips1::detect_data_hazard() {
         has_load_read_dependency(previous_instruction[1], instr_vec)) {
 
         if (pipeline_size == 5) cycles += 1;
-        else if (pipeline_size == 7) cycles += 2;
+        else if (pipeline_size == 7 || pipeline_size == 13) cycles += 2;
     }
 
     // load $2, 0($3)
@@ -478,7 +472,18 @@ void mips1::detect_data_hazard() {
     if (previous_instruction[0] &&
         has_load_read_dependency(previous_instruction[0], instr_vec)) {
 
-        if (pipeline_size == 7) cycles += 1;
+        // if instr_vec has a load-read dependency on previous_instruction[0],
+        // and if previous_instruction[1] also has a load-read dependency on
+        // previous_instruction[0], then we already stalled when
+        // previous_instruction[1] entered the pipeline, and don't need to stall
+        // again for instr_vec:
+        //     lb $1, 0($2)
+        //     add $4, $1, $3 <-- stall here because of $1
+        //     add $5, $9, $1 <-- no need to stall here!
+
+        bool stalled = has_load_read_dependency(previous_instruction[0],
+                                                previous_instruction[1]);
+        if ((pipeline_size == 7 || pipeline_size == 13) && !stalled) cycles += 1;
     }
 }
 
