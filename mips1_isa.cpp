@@ -55,14 +55,29 @@ using namespace mips1_parms;
 
 // branch predictor
 using namespace std;
-int bit = 0;
+int state = 0;
+int misprediction = 0;
 
 void branch_taken() {
-  if (bit < 3) bit++;
+  //check if misprediction
+  if (state <= 1) {
+    misprediction++;
+    //cout << misprediction << endl;
+  }
+
+  //increment state
+  if (state < 3) state++;
 }
 
 void branch_ntaken() {
-  if (bit > 0) bit--;
+  //check if misprediction
+  if (state >= 2) {
+    misprediction++;
+    //cout << misprediction << endl;
+  }
+
+  //decrement state
+  if (state > 0) state--;
 }
 
 //!Generic instruction behavior method.
