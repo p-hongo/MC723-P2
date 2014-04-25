@@ -20,6 +20,8 @@
 
 int pipeline_size = 5;
 int cycles = pipeline_size-1;
+d4cache *mem_cache;
+d4cache *ins_cache;
 
 void mips1::behavior() {
 
@@ -88,7 +90,10 @@ void mips1::behavior() {
       detect_data_hazard();
 
       ISA.cur_instr_id = ins_id;
-      if (!ac_annul_sig) ISA._behavior_instruction(instr_vec->get(1));
+      if (!ac_annul_sig) ISA._behavior_instruction(instr_vec->get(1));   
+
+      get_cache_misses(ac_annul_sig, ins_id, instr_vec, mem_cache);
+
       switch (ins_id) {
       case 1: // Instruction lb
         if (!ac_annul_sig) ISA._behavior_mips1_Type_I(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(7));
@@ -390,6 +395,45 @@ bool mips1::has_load_read_dependency(ac_instr_t *load, ac_instr_t *instruction) 
     return false;
 }
 
+d4cache* mips1::set_mem_cache() {
+    d4cache* Mem;
+    d4cache* L1;
+    char *name = new char[20];
+    strcmp(name, "L1");
+
+    Mem = d4new(NULL);
+    
+    Mem = d4new(NULL);
+    L1 = d4new(Mem);
+    L1->name = name;
+    L1->lg2blocksize = 8;
+    L1->lg2subblocksize = 6;
+    L1->lg2size = 20;
+    L1->assoc = 2;
+    L1->replacementf = d4rep_lru;
+    L1->prefetchf = d4prefetch_none;
+    L1->wallocf = d4walloc_always;
+    L1->wbackf = d4wback_always;
+    L1->name_replacement = L1->name_prefetch = L1->name_walloc = L1->name_wback = name;
+    
+    return L1;
+}
+
+void mips1::get_cache_misses(int ac_annul_sig, int ins_id, mips1::ac_instr_t* instr_vec, d4cache *cache){
+    d4memref R;
+    if(!ac_annul_sig && ins_id == 1 || ins_id == 2){
+        R.address = (d4addr) (RB[instr_vec->get(2)] + instr_vec->get(7));
+        R.size = sizeof(char);
+        R.accesstype = D4XREAD;
+        d4ref(mem_cache, R);
+    }
+}
+
+void mips1::print_cache_status(d4cache *cache) {
+    std::cout << "Cache misses:" << endl;
+    std::cout << cache->miss[D4XREAD];
+}
+
 void mips1::detect_data_hazard() {
     // We assume forwarding for all pipeline stages, and that
     // branches are resolved in the EX step.
@@ -479,7 +523,16 @@ void mips1::init(int ac, char *av[]) {
 
   ac_pc = ac_start_addr;
   ISA._behavior_begin();
+
+  mem_cache = set_mem_cache();
+  int r;
+  if (0 != (r = d4setup())) {
+      std::cerr << "Failed\n";
+      abort();
+  }
+  
   cerr << "ArchC: -------------------- Starting Simulation --------------------" << endl;
+
   InitStat();
 
   signal(SIGINT, sigint_handler);
@@ -503,6 +556,7 @@ void mips1::stop(int status) {
   cerr << "\nNumber of cycles: " << cycles << endl;
   cerr << "Execution time: " << (double)(cycles)/(double)pipeline_size
        << endl;
+  print_cache_status(mem_cache);
   ISA._behavior_end();
   ac_stop_flag = 1;
   ac_exit_status = status;

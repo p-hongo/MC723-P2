@@ -23,6 +23,11 @@
 #include "mips1_arch.H"
 #include "mips1_isa.H"
 #include "mips1_syscall.H"
+extern "C" {
+#include "d4.h"
+#include "cmdd4.h"
+#include "cmdargs.h"
+}
 
 
 class mips1: public ac_module, public mips1_arch {
@@ -53,7 +58,13 @@ public:
   bool has_load_read_dependency(ac_instr_t *i1, ac_instr_t *i2);
 
   void detect_data_hazard();
- 
+
+  d4cache* set_mem_cache();
+
+    void print_cache_status(d4cache *cache);
+
+    void get_cache_misses(int ac_annul_sig, int ins_id, mips1::ac_instr_t* instr_vec, d4cache *cache);
+
   SC_HAS_PROCESS( mips1 );
 
   //!Constructor.
