@@ -409,16 +409,6 @@ void mips1::detect_data_hazard() {
     //     add $4, $1, $5
     // in which case we only need a 1-cycle stall.
 
-    // FIXME if instr_vec depends on previous_instruction[1] but also
-    // has a load-read dependency on previous_instruction[0], and if
-    // previous_instruction[1] also has a load_read dependency on
-    // previous_instruction[0], then we already stalled when
-    // previous_instruction[1] entered the pipeline, and don't need to stall
-    // again for instr_vec:
-    //     lb $1, 0($2)
-    //     add $4, $1, $3 <-- stall here because of $1
-    //     add $5, $4, $1 <-- no need to stall here!
-
     // load $2, 0($3)
     // add $4, $2, 7
     if (previous_instruction[1] &&
@@ -434,7 +424,18 @@ void mips1::detect_data_hazard() {
     if (previous_instruction[0] &&
         has_load_read_dependency(previous_instruction[0], instr_vec)) {
 
-        if (pipeline_size == 7) cycles += 1;
+        // if instr_vec has a load-read dependency on previous_instruction[0],
+        // and if previous_instruction[1] also has a load-read dependency on
+        // previous_instruction[0], then we already stalled when
+        // previous_instruction[1] entered the pipeline, and don't need to stall
+        // again for instr_vec:
+        //     lb $1, 0($2)
+        //     add $4, $1, $3 <-- stall here because of $1
+        //     add $5, $9, $1 <-- no need to stall here!
+
+        bool stalled = has_load_read_dependency(previous_instruction[0],
+                                                previous_instruction[1]);
+        if (pipeline_size == 7 && !stalled) cycles += 1;
     }
 }
 
