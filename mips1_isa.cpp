@@ -159,6 +159,7 @@ void ac_behavior( lh )
   half = DM.read_half(RB[rs]+ imm);
   RB[rt] = (ac_Sword)half ;
   dbg_printf("Result = %#x\n", RB[rt]);
+  access_cache(RB[rs]+ imm, sizeof(short int), D4XREAD);
 };
 
 //!Instruction lhu behavior method.
