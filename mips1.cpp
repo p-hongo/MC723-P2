@@ -20,8 +20,6 @@
 
 int pipeline_size = 5;
 int cycles = pipeline_size-1;
-d4cache *mem_cache;
-d4cache *ins_cache;
 
 void mips1::behavior() {
 
@@ -92,7 +90,7 @@ void mips1::behavior() {
       ISA.cur_instr_id = ins_id;
       if (!ac_annul_sig) ISA._behavior_instruction(instr_vec->get(1));   
 
-      get_mem_cache_misses(ac_annul_sig, ins_id, instr_vec, mem_cache);
+      //get_mem_cache_misses(ac_annul_sig, ins_id, instr_vec, mem_cache);
 
       switch (ins_id) {
       case 1: // Instruction lb
@@ -441,15 +439,15 @@ d4cache* mips1::set_ins_cache() {
     return L1;
 }
 
-void mips1::get_mem_cache_misses(int ac_annul_sig, int ins_id, mips1::ac_instr_t* instr_vec, d4cache *cache){
-    d4memref R;
+/*void mips1::get_mem_cache_misses(int ac_annul_sig, int ins_id, mips1::ac_instr_t* instr_vec, d4cache *cache){
+    
     if(!ac_annul_sig && ins_id == 1 || ins_id == 2){
         R.address = (d4addr) (RB[instr_vec->get(2)] + instr_vec->get(7));
         R.size = sizeof(char);
         R.accesstype = D4XREAD;
         d4ref(mem_cache, R);
-    }
-}
+    } 
+    }*/
 
 void mips1::print_cache_status(d4cache *cache) {
     std::cout << "Cache misses:" << endl;

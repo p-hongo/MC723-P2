@@ -53,6 +53,17 @@
 using namespace mips1_parms;
 
 
+d4cache *mem_cache;
+d4cache *ins_cache;
+d4memref R;
+
+void access_cache(d4addr addr, int size, int type){
+    R.address = (d4addr)(addr);
+    R.accesstype = size;
+    R.accesstype = type;
+    d4ref(mem_cache, R);
+}
+
 // branch predictor
 using namespace std;
 int state = 0;
@@ -125,6 +136,8 @@ void ac_behavior( lb )
   byte = DM.read_byte(RB[rs]+ imm);
   RB[rt] = (ac_Sword)byte ;
   dbg_printf("Result = %#x\n", RB[rt]);
+  //cache
+  access_cache(RB[rs]+ imm, sizeof(char), D4XREAD);
 };
 
 //!Instruction lbu behavior method.
@@ -135,6 +148,7 @@ void ac_behavior( lbu )
   byte = DM.read_byte(RB[rs]+ imm);
   RB[rt] = byte ;
   dbg_printf("Result = %#x\n", RB[rt]);
+  access_cache(RB[rs]+ imm, sizeof(char), D4XREAD);
 };
 
 //!Instruction lh behavior method.
@@ -154,6 +168,7 @@ void ac_behavior( lhu )
   half = DM.read_half(RB[rs]+ imm);
   RB[rt] = half ;
   dbg_printf("Result = %#x\n", RB[rt]);
+  access_cache(RB[rs]+ imm, sizeof(short int), D4XREAD);
 };
 
 //!Instruction lw behavior method.
@@ -162,6 +177,7 @@ void ac_behavior( lw )
   dbg_printf("lw r%d, %d(r%d)\n", rt, imm & 0xFFFF, rs);
   RB[rt] = DM.read(RB[rs]+ imm);
   dbg_printf("Result = %#x\n", RB[rt]);
+  access_cache(RB[rs]+ imm, sizeof(int), D4XREAD);
 };
 
 //!Instruction lwl behavior method.
@@ -178,6 +194,7 @@ void ac_behavior( lwl )
   data |= RB[rt] & ((1<<offset)-1);
   RB[rt] = data;
   dbg_printf("Result = %#x\n", RB[rt]);
+  access_cache(addr & 0xFFFFFFFC, sizeof(int), D4XREAD);
 };
 
 //!Instruction lwr behavior method.
@@ -194,6 +211,7 @@ void ac_behavior( lwr )
   data |= RB[rt] & (0xFFFFFFFF << (32-offset));
   RB[rt] = data;
   dbg_printf("Result = %#x\n", RB[rt]);
+  access_cache(addr & 0xFFFFFFFC, sizeof(int), D4XREAD);
 };
 
 //!Instruction sb behavior method.
@@ -204,6 +222,7 @@ void ac_behavior( sb )
   byte = RB[rt] & 0xFF;
   DM.write_byte(RB[rs] + imm, byte);
   dbg_printf("Result = %#x\n", (int) byte);
+  access_cache(RB[rs] + imm, sizeof(char), D4XWRITE);
 };
 
 //!Instruction sh behavior method.
@@ -214,6 +233,7 @@ void ac_behavior( sh )
   half = RB[rt] & 0xFFFF;
   DM.write_half(RB[rs] + imm, half);
   dbg_printf("Result = %#x\n", (int) half);
+  access_cache(RB[rs] + imm, sizeof(short int), D4XWRITE);
 };
 
 //!Instruction sw behavior method.
@@ -222,6 +242,7 @@ void ac_behavior( sw )
   dbg_printf("sw r%d, %d(r%d)\n", rt, imm & 0xFFFF, rs);
   DM.write(RB[rs] + imm, RB[rt]);
   dbg_printf("Result = %#x\n", RB[rt]);
+  access_cache(RB[rs] + imm, sizeof(int), D4XWRITE);
 };
 
 //!Instruction swl behavior method.
@@ -238,6 +259,8 @@ void ac_behavior( swl )
   data |= DM.read(addr & 0xFFFFFFFC) & (0xFFFFFFFF << (32-offset));
   DM.write(addr & 0xFFFFFFFC, data);
   dbg_printf("Result = %#x\n", data);
+  access_cache(addr & 0xFFFFFFFC, sizeof(int), D4XREAD);
+  access_cache(addr & 0xFFFFFFFC, sizeof(int), D4XWRITE);
 };
 
 //!Instruction swr behavior method.
@@ -254,6 +277,8 @@ void ac_behavior( swr )
   data |= DM.read(addr & 0xFFFFFFFC) & ((1<<offset)-1);
   DM.write(addr & 0xFFFFFFFC, data);
   dbg_printf("Result = %#x\n", data);
+  access_cache(addr & 0xFFFFFFFC, sizeof(int), D4XREAD);
+  access_cache(addr & 0xFFFFFFFC, sizeof(int), D4XWRITE);
 };
 
 //!Instruction addi behavior method.
