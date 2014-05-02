@@ -54,7 +54,7 @@ using namespace mips1_parms;
 
 
 d4cache *mem_cache;
-d4cache *ins_cache;
+d4cache *instr_cache;
 d4memref R;
 
 void access_cache(d4addr addr, int size, int type){

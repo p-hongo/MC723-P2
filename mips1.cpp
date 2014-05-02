@@ -397,7 +397,7 @@ d4cache* mips1::set_mem_cache() {
     d4cache* Mem;
     d4cache* L1;
     char *name = new char[20];
-    strcmp(name, "L1");
+    strcpy(name, "Mem");
 
     Mem = d4new(NULL);
     L1 = d4new(Mem);
@@ -420,7 +420,7 @@ d4cache* mips1::set_ins_cache() {
     d4cache* Mem;
     d4cache* L1;
     char *name = new char[20];
-    strcmp(name, "L1");
+    strcpy(name, "Instr");
 
     Mem = d4new(NULL);
     L1 = d4new(Mem);
@@ -449,9 +449,27 @@ d4cache* mips1::set_ins_cache() {
     } 
     }*/
 
-void mips1::print_cache_status(d4cache *cache) {
-    std::cout << "Cache misses:" << endl;
-    std::cout << cache->miss[D4XREAD];
+void mips1::print_cache_status(d4cache *L1) {
+    std::cout << "Cache " << L1->name << " misses:" << endl;
+    int misses = L1->miss[D4XREAD]
+        + L1->miss[D4XWRITE]
+        + L1->miss[D4XINSTRN]
+        + L1->miss[D4XMISC]
+        + L1->miss[D4XREAD+D4PREFETCH]
+        + L1->miss[D4XWRITE+D4PREFETCH]
+        + L1->miss[D4XINSTRN+D4PREFETCH]
+        + L1->miss[D4XMISC+D4PREFETCH];
+    int access = L1->fetch[D4XREAD]
+        + L1->fetch[D4XWRITE]
+        + L1->fetch[D4XINSTRN]
+        + L1->fetch[D4XMISC]
+        + L1->fetch[D4XREAD+D4PREFETCH]
+        + L1->fetch[D4XWRITE+D4PREFETCH]
+        + L1->fetch[D4XINSTRN+D4PREFETCH]
+        + L1->fetch[D4XMISC+D4PREFETCH];
+    double percentage = 100*(double)misses/(double)(access);       
+    std::cout << misses << " of " << access;
+    std::cout << " (" <<  percentage << "\%" ")"<< "\n";
 }
 
 void mips1::detect_data_hazard() {
@@ -550,6 +568,7 @@ void mips1::init(int ac, char *av[]) {
   ISA._behavior_begin();
 
   mem_cache = set_mem_cache();
+  instr_cache = set_ins_cache();
   int r;
   if (0 != (r = d4setup())) {
       std::cerr << "Failed\n";
@@ -582,6 +601,7 @@ void mips1::stop(int status) {
   cerr << "Execution time: " << (double)(cycles)/(double)pipeline_size
        << endl;
   print_cache_status(mem_cache);
+  print_cache_status(instr_cache);
   ISA._behavior_end();
   ac_stop_flag = 1;
   ac_exit_status = status;
