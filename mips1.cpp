@@ -470,6 +470,9 @@ void mips1::print_cache_status(d4cache *L1) {
     double percentage = 100*(double)misses/(double)(access);       
     std::cout << misses << " of " << access;
     std::cout << " (" <<  percentage << "\%" ")"<< "\n";
+    std::cout << "compulsory misses: " << L1->comp_miss[D4XWRITE]+L1->comp_miss[D4XINSTRN]+L1->comp_miss[D4XMISC]+L1->comp_miss[D4XREAD] << "\n";
+    std::cout << "capacity misses: " <<  L1->cap_miss[D4XWRITE]+L1->cap_miss[D4XINSTRN]+L1->cap_miss[D4XMISC]+L1->cap_miss[D4XREAD] << "\n";
+    std::cout << "conflict misses: " <<  L1->conf_miss[D4XWRITE]+L1->conf_miss[D4XINSTRN]+L1->conf_miss[D4XMISC]+L1->conf_miss[D4XREAD] << "\n";
 }
 
 void mips1::detect_data_hazard() {
