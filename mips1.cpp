@@ -20,6 +20,7 @@
 
 int pipeline_size = 5;
 int cycles = pipeline_size-1;
+int cycles_lost_to_hazards = 0;
 
 void mips1::behavior() {
 
@@ -503,8 +504,13 @@ void mips1::detect_data_hazard() {
     if (previous_instruction[1] &&
         has_load_read_dependency(previous_instruction[1], instr_vec)) {
 
-        if (pipeline_size == 5) cycles += 1;
-        else if (pipeline_size == 7 || pipeline_size == 13) cycles += 2;
+        if (pipeline_size == 5) {
+            cycles += 1;
+            cycles_lost_to_hazards += 1;
+        } else if (pipeline_size == 7 || pipeline_size == 13) {
+            cycles += 2;
+            cycles_lost_to_hazards += 2;
+        }
     }
 
     // load $2, 0($3)
@@ -524,7 +530,10 @@ void mips1::detect_data_hazard() {
 
         bool stalled = has_load_read_dependency(previous_instruction[0],
                                                 previous_instruction[1]);
-        if ((pipeline_size == 7 || pipeline_size == 13) && !stalled) cycles += 1;
+        if ((pipeline_size == 7 || pipeline_size == 13) && !stalled) {
+            cycles += 1;
+            cycles_lost_to_hazards += 1;
+        }
     }
 }
 
@@ -603,6 +612,7 @@ void mips1::stop(int status) {
   cerr << "\nNumber of cycles: " << cycles << endl;
   cerr << "Execution time: " << (double)(cycles)/(double)pipeline_size
        << endl;
+  cerr << "Cycles lost to data hazards: " << cycles_lost_to_hazards << endl;
   print_cache_status(mem_cache);
   print_cache_status(instr_cache);
   ISA._behavior_end();
