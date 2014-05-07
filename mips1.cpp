@@ -404,14 +404,14 @@ d4cache* mips1::set_mem_cache() {
     L1 = d4new(Mem);
     L1->name = name;
     L1->flags = D4F_CCC;
-    L1->lg2blocksize = 8;
-    L1->lg2subblocksize = 6;
-    L1->lg2size = 20;
-    L1->assoc = 2;
+    L1->lg2blocksize = 9;
+    L1->lg2subblocksize = 9;
+    L1->lg2size = 17;
+    L1->assoc = 1;
     L1->replacementf = d4rep_lru;
     L1->prefetchf = d4prefetch_none;
     L1->wallocf = d4walloc_always;
-    L1->wbackf = d4wback_always;
+    L1->wbackf = d4wback_never;
     L1->name_replacement = L1->name_prefetch = L1->name_walloc = L1->name_wback = name;
     
     return L1;
@@ -427,14 +427,14 @@ d4cache* mips1::set_ins_cache() {
     L1 = d4new(Mem);
     L1->name = name;
     L1->flags = D4F_CCC | D4F_RO;
-    L1->lg2blocksize = 8;
-    L1->lg2subblocksize = 6;
-    L1->lg2size = 20;
-    L1->assoc = 2;
+    L1->lg2blocksize = 9;
+    L1->lg2subblocksize = 9;
+    L1->lg2size = 17;
+    L1->assoc = 1;
     L1->replacementf = d4rep_lru;
     L1->prefetchf = d4prefetch_none;
     L1->wallocf = d4walloc_always;
-    L1->wbackf = d4wback_always;
+    L1->wbackf = d4wback_never;
     L1->name_replacement = L1->name_prefetch = L1->name_walloc = L1->name_wback = name;
     
     return L1;
@@ -451,7 +451,7 @@ d4cache* mips1::set_ins_cache() {
     }*/
 
 void mips1::print_cache_status(d4cache *L1) {
-    std::cout << "Cache " << L1->name << " misses:" << endl;
+    std::cout << "\nCache " << L1->name << " misses:" << "\n";
     int misses = L1->miss[D4XREAD]
         + L1->miss[D4XWRITE]
         + L1->miss[D4XINSTRN]
@@ -468,12 +468,14 @@ void mips1::print_cache_status(d4cache *L1) {
         + L1->fetch[D4XWRITE+D4PREFETCH]
         + L1->fetch[D4XINSTRN+D4PREFETCH]
         + L1->fetch[D4XMISC+D4PREFETCH];
-    double percentage = 100*(double)misses/(double)(access);       
+    double percentage = 100*(double)misses/(double)(access);  
     std::cout << misses << " of " << access;
     std::cout << " (" <<  percentage << "\%" ")"<< "\n";
+    std::cout << "read misses: " <<  L1->miss[D4XREAD] << "/" << (int)L1->fetch[D4XREAD] << "\n";
+    std::cout << "write misses: " <<  L1->miss[D4XWRITE] << "/" << (int)L1->fetch[D4XWRITE] << "\n";
     std::cout << "compulsory misses: " << L1->comp_miss[D4XWRITE]+L1->comp_miss[D4XINSTRN]+L1->comp_miss[D4XMISC]+L1->comp_miss[D4XREAD] << "\n";
     std::cout << "capacity misses: " <<  L1->cap_miss[D4XWRITE]+L1->cap_miss[D4XINSTRN]+L1->cap_miss[D4XMISC]+L1->cap_miss[D4XREAD] << "\n";
-    std::cout << "conflict misses: " <<  L1->conf_miss[D4XWRITE]+L1->conf_miss[D4XINSTRN]+L1->conf_miss[D4XMISC]+L1->conf_miss[D4XREAD] << "\n";
+    std::cout << "conflict misses: " <<  L1->conf_miss[D4XWRITE]+L1->conf_miss[D4XINSTRN]+L1->conf_miss[D4XMISC]+L1->conf_miss[D4XREAD] << "\n\n";
 }
 
 void mips1::detect_data_hazard() {
