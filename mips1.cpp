@@ -492,6 +492,13 @@ void mips1::print_cache_status(d4cache *L1) {
     std::cout << "conflict misses: " <<  (int)(L1->conf_miss[D4XWRITE]+L1->conf_miss[D4XINSTRN]+L1->conf_miss[D4XMISC]+L1->conf_miss[D4XREAD]) << "\n\n";
 }
 
+void print_mispredictions() {
+  
+  std::cout << endl << "1-bit mispredictions: " << misprediction << endl;
+  std::cout << "2-bit mispredictions: " << lmisprediction << endl << endl;
+
+}
+
 void mips1::detect_data_hazard() {
     // We assume forwarding for all pipeline stages, and that
     // branches are resolved in the EX step.
@@ -631,6 +638,7 @@ void mips1::stop(int status) {
   cerr << "Cycles lost to data hazards: " << cycles_lost_to_hazards << endl;
   print_cache_status(mem_cache);
   print_cache_status(instr_cache);
+  print_mispredictions();
   ISA._behavior_end();
   ac_stop_flag = 1;
   ac_exit_status = status;

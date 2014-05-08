@@ -65,31 +65,75 @@ void access_cache(d4addr addr, int size, int type, d4cache *cache){
 }
 
 // branch predictor
+#include <unordered_map>
 using namespace std;
+
+unordered_map<int, int> map;
+
 int state = 0;
 int misprediction = 0;
 
-void branch_taken() {
-  //check if misprediction
-  if (state <= 1) {
-    misprediction++;
-    //cout << misprediction << endl;
-  }
+void branch_taken(int pc) {
 
-  //increment state
-  if (state < 3) state++;
+  unordered_map<int, int>::const_iterator got = map.find(pc);
+
+  if (got == map.end())
+    map[pc] = 0;
+  else if (map[pc] == 0) {
+    misprediction++;
+    map[pc] = 1;
+  }
+  
+  //cout << map[pc] << " " << misprediction << endl;
 }
 
-void branch_ntaken() {
-  //check if misprediction
-  if (state >= 2) {
+void branch_ntaken(int pc) {
+
+  unordered_map<int, int>::const_iterator got = map.find(pc);
+
+  if (got == map.end())
+    map[pc] = 0;
+  else if (map[pc] == 1) {
     misprediction++;
-    //cout << misprediction << endl;
+    map[pc] = 0;
   }
 
-  //decrement state
-  if (state > 0) state--;
+  //cout << map[pc] << " " << misprediction << endl;
 }
+
+
+unordered_map<int, int> lmap;
+int lmisprediction = 0;
+
+
+void lbranch_taken(int pc) {
+
+  unordered_map<int, int>::const_iterator got = lmap.find(pc);
+
+  if (got == lmap.end())
+    lmap[pc] = 0;
+  else if (lmap[pc] <= 1) {
+    lmisprediction++;
+  }
+
+  if (lmap[pc] < 3) lmap[pc]++;
+  //cout << lmap[pc] << " " << misprediction << endl;
+}
+
+void  lbranch_ntaken(int pc) {
+
+  unordered_map<int, int>::const_iterator got = lmap.find(pc);
+
+  if (got == lmap.end())
+    lmap[pc] = 0;
+  else if (lmap[pc] >= 2) {
+    lmisprediction++;
+  }
+
+  if (lmap[pc] > 0) lmap[pc]--;
+  //cout << lmap[pc] << " " << misprediction << endl;
+}
+
 
 //!Generic instruction behavior method.
 void ac_behavior( instruction )
@@ -679,13 +723,15 @@ void ac_behavior( beq )
 {
   dbg_printf("beq r%d, r%d, %d\n", rt, rs, imm & 0xFFFF);
   if( RB[rs] == RB[rt] ){
-    branch_taken();
+    branch_taken(ac_pc);
+    lbranch_taken(ac_pc);
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif 
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   }	else {
-    branch_ntaken();
+    branch_ntaken(ac_pc);
+    lbranch_ntaken(ac_pc);
   }
 };
 
@@ -694,13 +740,15 @@ void ac_behavior( bne )
 {	
   dbg_printf("bne r%d, r%d, %d\n", rt, rs, imm & 0xFFFF);
   if( RB[rs] != RB[rt] ){
-    branch_taken();
+    branch_taken(ac_pc);
+    lbranch_taken(ac_pc);
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif 
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   }	else {
-    branch_ntaken();
+    branch_ntaken(ac_pc);
+    lbranch_ntaken(ac_pc);
   }	
 };
 
@@ -709,13 +757,15 @@ void ac_behavior( blez )
 {
   dbg_printf("blez r%d, %d\n", rs, imm & 0xFFFF);
   if( (RB[rs] == 0 ) || (RB[rs]&0x80000000 ) ){
-    branch_taken();
+    branch_taken(ac_pc);
+    lbranch_taken(ac_pc);
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2), 1;
 #endif 
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   }	else {
-    branch_ntaken();
+    branch_ntaken(ac_pc);
+    lbranch_ntaken(ac_pc);
   }	
 };
 
@@ -724,13 +774,15 @@ void ac_behavior( bgtz )
 {
   dbg_printf("bgtz r%d, %d\n", rs, imm & 0xFFFF);
   if( !(RB[rs] & 0x80000000) && (RB[rs]!=0) ){
-    branch_taken();
+    branch_taken(ac_pc);
+    lbranch_taken(ac_pc);
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif 
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   }	else {
-    branch_ntaken();
+    branch_ntaken(ac_pc);
+    lbranch_ntaken(ac_pc);
   }	
 };
 
@@ -739,13 +791,15 @@ void ac_behavior( bltz )
 {
   dbg_printf("bltz r%d, %d\n", rs, imm & 0xFFFF);
   if( RB[rs] & 0x80000000 ){
-    branch_taken();
+    branch_taken(ac_pc);
+    lbranch_taken(ac_pc);
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif 
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   }	else {
-    branch_ntaken();
+    branch_ntaken(ac_pc);
+    lbranch_ntaken(ac_pc);
   }	
 };
 
@@ -754,13 +808,15 @@ void ac_behavior( bgez )
 {
   dbg_printf("bgez r%d, %d\n", rs, imm & 0xFFFF);
   if( !(RB[rs] & 0x80000000) ){
-    branch_taken();
+    branch_taken(ac_pc);
+    lbranch_taken(ac_pc);
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif 
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   }	else {
-    branch_ntaken();
+    branch_ntaken(ac_pc);
+    lbranch_ntaken(ac_pc);
   }	
 };
 
@@ -770,13 +826,15 @@ void ac_behavior( bltzal )
   dbg_printf("bltzal r%d, %d\n", rs, imm & 0xFFFF);
   RB[Ra] = ac_pc+4; //ac_pc is pc+4, we need pc+8
   if( RB[rs] & 0x80000000 ){
-    branch_taken();
+    branch_taken(ac_pc);
+    lbranch_taken(ac_pc);
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif 
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   }	else {
-    branch_ntaken();
+    branch_ntaken(ac_pc);
+    lbranch_ntaken(ac_pc);
   }	
   dbg_printf("Return = %#x\n", ac_pc+4);
 };
@@ -787,13 +845,15 @@ void ac_behavior( bgezal )
   dbg_printf("bgezal r%d, %d\n", rs, imm & 0xFFFF);
   RB[Ra] = ac_pc+4; //ac_pc is pc+4, we need pc+8
   if( !(RB[rs] & 0x80000000) ){
-    branch_taken();
+    branch_taken(ac_pc);
+    lbranch_taken(ac_pc);
 #ifndef NO_NEED_PC_UPDATE
     npc = ac_pc + (imm<<2);
 #endif 
     dbg_printf("Taken to %#x\n", ac_pc + (imm<<2));
   }	else {
-    branch_ntaken();
+    branch_ntaken(ac_pc);
+    lbranch_ntaken(ac_pc);
   }	
   dbg_printf("Return = %#x\n", ac_pc+4);
 };

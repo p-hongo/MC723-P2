@@ -33,7 +33,7 @@ LIB_SYSTEMC := -lsystemc
 LIBS := $(LIB_SYSTEMC) -lm $(EXTRA_LIBS) -larchc -ld4
 CC :=   g++
 
-OPT :=   -O3
+OPT :=   -O3 -std=c++0x
 
 DEBUG :=   -g
 
