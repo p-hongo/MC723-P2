@@ -468,11 +468,25 @@ void mips1::print_cache_status(d4cache *L1) {
         + L1->fetch[D4XWRITE+D4PREFETCH]
         + L1->fetch[D4XINSTRN+D4PREFETCH]
         + L1->fetch[D4XMISC+D4PREFETCH];
-    double percentage = 100*(double)misses/(double)(access);  
+    int non_comp_misses = misses - L1->comp_miss[D4XWRITE] - L1->comp_miss[D4XREAD];
+    double total_percentage = 100*(double)misses/(double)access;
+    double non_comp_percentage = 100*(double)non_comp_misses/(double)access;
     std::cout << misses << " of " << access;
-    std::cout << " (" <<  percentage << "\%" ")"<< "\n";
-    std::cout << "read misses: " <<  L1->miss[D4XREAD] << "/" << (int)L1->fetch[D4XREAD] << "\n";
-    std::cout << "write misses: " <<  L1->miss[D4XWRITE] << "/" << (int)L1->fetch[D4XWRITE] << "\n";
+    std::cout << " (" <<  total_percentage << "\%" << " total)";
+    std::cout << " (" << non_comp_percentage << "\%" <<" non-compulsory)"<< "\n";
+
+    std::cout << "read misses: " <<  L1->miss[D4XREAD] << "/" << (int)L1->fetch[D4XREAD];
+    std::cout << " (" << (double)(100*(double)L1->miss[D4XREAD]/(double)L1->fetch[D4XREAD]) << "\%)\n";
+
+    std::cout << "read non-comp misses: " <<  L1->miss[D4XREAD] - L1->comp_miss[D4XREAD] << "/" << (int)L1->fetch[D4XREAD];
+    std::cout << " (" << (double)(100*(double)(L1->miss[D4XREAD] - L1->comp_miss[D4XREAD])/(double)L1->fetch[D4XREAD]) << "\%)\n";
+
+    std::cout << "write misses: " <<  L1->miss[D4XWRITE] << "/" << (int)L1->fetch[D4XWRITE];
+    std::cout << " (" << (double)(100*(double)L1->miss[D4XWRITE]/(double)L1->fetch[D4XWRITE]) << "\%)\n";
+
+    std::cout << "write non-comp misses: " <<  L1->miss[D4XWRITE] - L1->comp_miss[D4XWRITE] << "/" << (int)L1->fetch[D4XWRITE];
+    std::cout << " (" << (double)(100*(double)(L1->miss[D4XREAD] - L1->comp_miss[D4XWRITE])/(double)L1->fetch[D4XWRITE]) << "\%)\n";
+
     std::cout << "compulsory misses: " << L1->comp_miss[D4XWRITE]+L1->comp_miss[D4XINSTRN]+L1->comp_miss[D4XMISC]+L1->comp_miss[D4XREAD] << "\n";
     std::cout << "capacity misses: " <<  L1->cap_miss[D4XWRITE]+L1->cap_miss[D4XINSTRN]+L1->cap_miss[D4XMISC]+L1->cap_miss[D4XREAD] << "\n";
     std::cout << "conflict misses: " <<  L1->conf_miss[D4XWRITE]+L1->conf_miss[D4XINSTRN]+L1->conf_miss[D4XMISC]+L1->conf_miss[D4XREAD] << "\n\n";
